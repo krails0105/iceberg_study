@@ -17,4 +17,3 @@ class BitcoinFetcher(Fetcher):
             return post(url=self.node_url, data=request_body)
         except Exception as e:
             raise e
- 
