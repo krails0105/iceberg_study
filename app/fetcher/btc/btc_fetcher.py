@@ -2,12 +2,13 @@ from app.fetcher import Fetcher
 from app.config import NodeRpcConfig
 from app.factory.node_rpc_factory import BitcoinNodeRpcFactory
 from requests import get, post
+from app.enum import Chain
 
 class BitcoinFetcher(Fetcher):
     
     def __init__(self):
         super().__init__()
-        self.chain: str = "btc"
+        self.chain: str = Chain.BTC
         self.node_url: str = NodeRpcConfig.get_node_url(chain=self.chain)
         
     def fetch_block(self):
