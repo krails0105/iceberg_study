@@ -1,5 +1,6 @@
 import yaml
 from dataclasses import dataclass, fields
+from datetime import datetime
 from pyiceberg.catalog import load_catalog
 from pyiceberg.schema import Schema
 from pyiceberg.partitioning import PartitionSpec, PartitionField
@@ -15,7 +16,8 @@ class IcebergHandler:
         self._init_catalog()
 
     def _init_catalog(self):
-        _catalog_config = self.config["catalog"]
+        # _catalog_config = self.config["catalog"]
+        _catalog_config = self.config
         _catalog_config["downcast-ns-timestamp-to-us-on-write"] = True # not support timestamp[ns] on iceberg
         self.warehouse_loc = _catalog_config["warehouse"]
         self.catalog = load_catalog(**_catalog_config)
@@ -35,12 +37,15 @@ class IcebergHandler:
                 schema_fields.append(NestedField(_idx, field.name, FloatType()))
             elif field.type == bool:
                 schema_fields.append(NestedField(_idx, field.name, BooleanType()))
-            elif field.type == TimestampType:
+            elif field.type == datetime:
                 schema_fields.append(NestedField(_idx, field.name, TimestampType()))
             elif field.type == Decimal:
                 # DecimalType은 Precision과 Scale을 지정해야 함
                 schema_fields.append(NestedField(_idx, field.name, DecimalType(precision=18, scale=8)))  # 예: Precision=10, Scale=2
             # 추가적으로 다른 타입을 여기에 추가할 수 있음
+            else:
+                raise ValueError(f"Invalid field type [{field.type}]")
+                
 
         # 필드들을 이용해 Schema 객체 생성
         return Schema(*schema_fields)
@@ -93,11 +98,32 @@ class IcebergHandler:
         )
         
         return schema, partition_spec
+    
+    
+    def _load_schema_and_partition_v2(self, table_name: str):
+        from app.domain.btc.dto.cq.block import BitcoinBlock
+        from app.domain.btc.dto.cq.transaction import BitcoinTransaction
+        
+        if table_name == "block":
+            _model = BitcoinBlock
+
+        schema = self.create_schema_from_dataclass(dataclass_instance=_model)
+        print(schema)
+        name_to_field_id = {field.name: field.field_id for field in schema.fields}
+        partition_type = "day"
+        partition_column = "block_time"
+        partition_spec = PartitionSpec(
+            self._get_partition_field(id=name_to_field_id[partition_column], partition_column=partition_column, partition_type=partition_type)
+        )
+        
+        return schema, partition_spec
+    
 
     def create_table(self, db_name: str, table_name: str):
         """Iceberg 테이블을 생성합니다."""
         identifier = f"{db_name}.{table_name}"
-        schema, partition_spec = self._load_schema_and_partition(table_name)
+        # schema, partition_spec = self._load_schema_and_partition(table_name)
+        schema, partition_spec = self._load_schema_and_partition_v2(table_name)
         
         return self.catalog.create_table_if_not_exists(
             identifier=identifier,
