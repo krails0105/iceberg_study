@@ -137,7 +137,7 @@ class IcebergHandler:
                 "write.target-file-size-bytes": "134217728",  # 128MB
             }
         )
-
+ 
     def load_table(self, db_name: str, table_name: str):
         """Iceberg 테이블을 로드합니다."""
         identifier = f"{db_name}.{table_name}"
