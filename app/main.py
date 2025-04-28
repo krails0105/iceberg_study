@@ -30,7 +30,7 @@ def get_schema():
         NestedField(2, "difficulty", DoubleType()),
         NestedField(3, "time", TimestampType())
     )
-
+ 
 
 def get_hourly_partition(source_id):
     # 파티션 정의 (시간 단위)
